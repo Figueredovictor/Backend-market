@@ -74,7 +74,16 @@ app.get("/products/:id", (req, res) => {
 
 // POST /products - crear un nuevo producto
 app.post("/products", (req, res) => {
-  const { name, price, description, imageUrl } = req.body;
+  const {
+    name,
+    price,
+    description,
+    imageUrl,
+    category,
+    condition,
+    seller,
+    location,
+  } = req.body;
 
   if (!name || typeof price !== "number") {
     return res
@@ -87,11 +96,11 @@ app.post("/products", (req, res) => {
     name,
     price,
     description: description || "Sin descripción",
-    category: "Sin categoría",
-    condition: "Usado",
+    category: category || "Sin categoría",
+    condition: condition || "Usado",
     imageUrl: imageUrl || null,
-    seller: "Vendedor Anónimo",
-    location: "Anáhuac",
+    seller: seller || "Vendedor Anónimo",
+    location: location || "Anáhuac",
   };
 
   products.unshift(newProduct);
@@ -99,7 +108,21 @@ app.post("/products", (req, res) => {
   res.status(201).json(newProduct);
 });
 
+// DELETE /products/:id - eliminar producto
+app.delete("/products/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const index = products.findIndex((p) => p.id === id);
+
+  if (index === -1) {
+    return res.status(404).json({ message: "Producto no encontrado" });
+  }
+
+  const removed = products.splice(index, 1)[0];
+  res.json({ message: "Producto eliminado", product: removed });
+});
+
 app.listen(PORT, () => {
   console.log(`Backend escuchando en puerto ${PORT}`);
 });
+
 
