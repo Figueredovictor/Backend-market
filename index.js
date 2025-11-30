@@ -3,7 +3,7 @@ const cors = require("cors");
 
 const app = express();
 
-// En la nube muchas veces el puerto viene de una variable de entorno (process.env.PORT)
+// En Render (y otros) el puerto viene de process.env.PORT
 const PORT = process.env.PORT || 5000;
 
 // Middlewares
@@ -50,7 +50,7 @@ let products = [
   },
 ];
 
-// GET / => simple mensaje para probar que el backend está vivo
+// GET /  -> solo para probar que está vivo
 app.get("/", (req, res) => {
   res.json({ message: "Market backend funcionando 🚀" });
 });
@@ -102,3 +102,4 @@ app.post("/products", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend escuchando en puerto ${PORT}`);
 });
+
