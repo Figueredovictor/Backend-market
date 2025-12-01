@@ -1,16 +1,28 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 
 const app = express();
-
-// En Render (y otros) el puerto viene de process.env.PORT
 const PORT = process.env.PORT || 5000;
+
+// Clave secreta para firmar tokens (en producción debería ir en una variable de entorno)
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-demo-key";
 
 // Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Datos en memoria (simulación de base de datos)
+// Usuario de prueba (mínimo indispensable para JWT)
+const users = [
+  {
+    id: 1,
+    email: "test@anahuac.mx",
+    password: "123456", // solo demo, sin hash
+    name: "Usuario Demo",
+  },
+];
+
+// Datos en memoria (simulación base de datos)
 let products = [
   {
     id: 1,
@@ -50,17 +62,68 @@ let products = [
   },
 ];
 
-// GET /  -> solo para probar que está vivo
+// Middleware para verificar JWT
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization || "";
+  const [type, token] = authHeader.split(" ");
+
+  if (type !== "Bearer" || !token) {
+    return res.status(401).json({ message: "Token faltante o formato inválido" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded; // { userId, email }
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Token inválido o expirado" });
+  }
+}
+
+// ----------- RUTAS -----------
+
+// Ping básico
 app.get("/", (req, res) => {
-  res.json({ message: "Market backend funcionando 🚀" });
+  res.json({ message: "Market backend con JWT funcionando 🚀" });
 });
 
-// GET /products - lista todos los productos
+// Login: devuelve un token JWT
+app.post("/auth/login", (req, res) => {
+  const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email y password son obligatorios" });
+  }
+
+  const user = users.find((u) => u.email === email);
+
+  if (!user || user.password !== password) {
+    return res.status(401).json({ message: "Credenciales inválidas" });
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: "2h" }
+  );
+
+  res.json({
+    message: "Login correcto",
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    },
+  });
+});
+
+// GET /products - público
 app.get("/products", (req, res) => {
   res.json(products);
 });
 
-// GET /products/:id - detalle de un producto
+// GET /products/:id - público
 app.get("/products/:id", (req, res) => {
   const id = Number(req.params.id);
   const product = products.find((p) => p.id === id);
@@ -72,8 +135,8 @@ app.get("/products/:id", (req, res) => {
   res.json(product);
 });
 
-// POST /products - crear un nuevo producto
-app.post("/products", (req, res) => {
+// POST /products - protegido con JWT
+app.post("/products", authMiddleware, (req, res) => {
   const {
     name,
     price,
@@ -83,7 +146,7 @@ app.post("/products", (req, res) => {
     condition,
     seller,
     location,
-  } = req.body;
+  } = req.body || {};
 
   if (!name || typeof price !== "number") {
     return res
@@ -101,6 +164,7 @@ app.post("/products", (req, res) => {
     imageUrl: imageUrl || null,
     seller: seller || "Vendedor Anónimo",
     location: location || "Anáhuac",
+    createdBy: req.user?.email || null,
   };
 
   products.unshift(newProduct);
@@ -108,8 +172,8 @@ app.post("/products", (req, res) => {
   res.status(201).json(newProduct);
 });
 
-// DELETE /products/:id - eliminar producto
-app.delete("/products/:id", (req, res) => {
+// DELETE /products/:id - protegido con JWT
+app.delete("/products/:id", authMiddleware, (req, res) => {
   const id = Number(req.params.id);
   const index = products.findIndex((p) => p.id === id);
 
