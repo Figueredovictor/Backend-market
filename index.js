@@ -35,6 +35,7 @@ let products = [
       "https://images.pexels.com/photos/18105/pexels-photo.jpg",
     seller: "Diego L.",
     location: "Anáhuac Cancún",
+    contact: "9991234567", // 👈 contacto demo
   },
   {
     id: 2,
@@ -47,6 +48,7 @@ let products = [
       "https://images.pexels.com/photos/47261/pexels-photo-47261.jpeg",
     seller: "Ana R.",
     location: "Anáhuac Cancún",
+    contact: "ana@anahuac.mx",
   },
   {
     id: 3,
@@ -59,6 +61,7 @@ let products = [
       "https://images.pexels.com/photos/3394664/pexels-photo-3394664.jpeg",
     seller: "Carlos M.",
     location: "Anáhuac Cancún",
+    contact: "https://instagram.com/carlos",
   },
 ];
 
@@ -146,6 +149,7 @@ app.post("/products", authMiddleware, (req, res) => {
     condition,
     seller,
     location,
+    contact,
   } = req.body || {};
 
   if (!name || typeof price !== "number") {
@@ -164,6 +168,7 @@ app.post("/products", authMiddleware, (req, res) => {
     imageUrl: imageUrl || null,
     seller: seller || "Vendedor Anónimo",
     location: location || "Anáhuac",
+    contact: contact || "",
     createdBy: req.user?.email || null,
   };
 
@@ -188,5 +193,4 @@ app.delete("/products/:id", authMiddleware, (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend escuchando en puerto ${PORT}`);
 });
-
 
